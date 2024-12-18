@@ -1,0 +1,41 @@
+From fcc5219910fa0427cada766ff0ecfcedbfe6d85d Mon Sep 17 00:00:00 2001
+From: Christoph Reiter <reiter.christoph@gmail.com>
+Date: Thu, 16 May 2024 23:00:34 +0200
+Subject: [PATCH] gtkprintoperation-win32: fix the build on Windows with GCC
+ 14.1.0
+
+Both cases expect a DLGTEMPLATE but the docs say that DLGTEMPLATEEX
+works too, despite it being a different struct, so just cast it.
+See https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createdialogindirectw
+
+This avoids two "-Wincompatible-pointer-types" which GCC 14 switched
+to being an error by default.
+---
+ gtk/gtkprintoperation-win32.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gtk/gtkprintoperation-win32.c b/gtk/gtkprintoperation-win32.c
+index 34a9b2fa0c8..1599739a7c5 100644
+--- a/gtk/gtkprintoperation-win32.c
++++ b/gtk/gtkprintoperation-win32.c
+@@ -1550,7 +1550,7 @@ create_application_page (GtkPrintOperation *op,
+   wcscpy_s (template->typeface, LF_FACESIZE, L"MS Shell Dlg");
+ 
+   /* Create an invisible dialog to measure dialog base units */
+-  measure_dialog = CreateDialogIndirectW (NULL, template, hwndOwner, measure_dialog_procedure);
++  measure_dialog = CreateDialogIndirectW (NULL, (LPCDLGTEMPLATE) template, hwndOwner, measure_dialog_procedure);
+   if (!measure_dialog)
+     g_warning ("CreateDialogIndirectW failed");
+   else
+@@ -1580,7 +1580,7 @@ create_application_page (GtkPrintOperation *op,
+   page.dwSize = sizeof (page);
+   page.dwFlags = PSP_DLGINDIRECT | PSP_USETITLE | PSP_PREMATURE;
+   page.hInstance = GetModuleHandle (NULL);
+-  page.pResource = template;
++  page.pResource = (LPCDLGTEMPLATE) template;
+   
+   tab_label = op->priv->custom_tab_label;
+   if (tab_label == NULL)
+-- 
+GitLab
+

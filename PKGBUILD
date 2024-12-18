@@ -44,6 +44,7 @@ prepare() {
         ;;
     esac
   done
+  patch -Np1 -i ../../fix_gcc_14.patch
 }
 
 build() {
